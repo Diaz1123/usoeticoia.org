@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DeclarationState, UsageTypeKey } from '../types';
 import { USAGE_TYPES } from '../constants';
@@ -14,10 +15,8 @@ export const Step2_UsageType: React.FC<Props> = ({ data, onChange }) => {
     let newTypes: UsageTypeKey[];
 
     if (currentTypes.includes(typeValue)) {
-      // Remove if exists (but prevent removing all?) - optional: allow removing all
       newTypes = currentTypes.filter(t => t !== typeValue);
     } else {
-      // Add if doesn't exist
       newTypes = [...currentTypes, typeValue];
     }
     onChange({ ...data, usageTypes: newTypes });
@@ -26,9 +25,9 @@ export const Step2_UsageType: React.FC<Props> = ({ data, onChange }) => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center md:text-left">
-        <h2 className="text-2xl font-bold text-slate-900">Clasificación del Uso</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Categorización del Uso</h2>
         <p className="text-slate-500 mt-2">
-            Confirma la clasificación sugerida. Puedes seleccionar <strong>múltiples opciones</strong> si tu caso es híbrido.
+            Confirma o añade categorías. Si tu trabajo es académico, sé preciso con la naturaleza de la contribución de la IA.
         </p>
       </div>
 
@@ -48,7 +47,6 @@ export const Step2_UsageType: React.FC<Props> = ({ data, onChange }) => {
                     `}
                 >
                     <div className="flex items-start gap-4">
-                        {/* Checkbox Visual */}
                         <div className={`
                             flex-shrink-0 w-6 h-6 mt-1 rounded border-2 flex items-center justify-center transition-colors
                             ${isSelected ? 'bg-primary-600 border-primary-600 text-white' : 'border-slate-300 bg-white'}
@@ -60,14 +58,13 @@ export const Step2_UsageType: React.FC<Props> = ({ data, onChange }) => {
                             <h3 className={`font-semibold text-lg ${isSelected ? 'text-primary-900' : 'text-slate-800'}`}>
                                 {type.label}
                             </h3>
-                            <p className="text-slate-600 mt-1 mb-3">
+                            <p className="text-slate-600 mt-1 mb-3 text-sm leading-relaxed">
                                 {type.hint}
                             </p>
                             
-                            {/* Examples */}
                             {type.examples.length > 0 && (
                                 <div className="bg-white/60 p-3 rounded-lg border border-slate-100/50">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ejemplos:</p>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ejemplos típicos:</p>
                                     <ul className="list-disc list-inside space-y-1">
                                         {type.examples.map((ex, i) => (
                                             <li key={i} className="text-sm text-slate-600">{ex}</li>
@@ -76,19 +73,18 @@ export const Step2_UsageType: React.FC<Props> = ({ data, onChange }) => {
                                 </div>
                             )}
 
-                            {/* Interactive Input for "Other" type */}
                             {type.value === 'other' && isSelected && (
                                 <div className="mt-4 animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                                        Especifica el uso:
+                                        Describa detalladamente el uso:
                                     </label>
-                                    <input
-                                        type="text"
+                                    <textarea
                                         autoFocus
-                                        placeholder="Describe brevemente..."
+                                        rows={2}
+                                        placeholder="Ej: La IA generó variantes de diseño experimental..."
                                         value={data.customUsageType}
                                         onChange={(e) => onChange({ ...data, customUsageType: e.target.value })}
-                                        className="w-full p-2.5 text-sm border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none border"
+                                        className="w-full p-2.5 text-sm border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none border resize-none"
                                     />
                                 </div>
                             )}

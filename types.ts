@@ -1,20 +1,16 @@
-export type UsageTypeKey = 'draft' | 'coauthor' | 'writing-support' | 'ideation' | 'analysis' | 'review' | 'other';
+
+export type UsageTypeKey = 'draft' | 'coauthor' | 'writing-support' | 'ideation' | 'analysis' | 'review' | 'translation' | 'coding' | 'other';
 
 export interface Prompt {
   id: string;
   description: string;
 }
 
-export interface ReviewTypes {
-  factual: boolean;
-  technical: boolean;
-  ethical: boolean;
-  style: boolean;
-}
+// 7 Levels of Human Intervention
+export type HumanReviewLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface HumanReview {
-  performed: boolean;
-  types: ReviewTypes;
+  level: HumanReviewLevel;
   reviewerRole: string;
 }
 
@@ -29,12 +25,15 @@ export interface AITool {
 }
 
 export interface DeclarationState {
-  usageTypes: UsageTypeKey[]; // Changed from single string to array
+  declarationId: string; // Unique ID for this session
+  selectedChecklistIds: string[]; // For traceability of Step 1
+  usageTypes: UsageTypeKey[];
   customUsageType: string;
   aiTool: AITool;
   specificPurpose: string;
   prompts: Prompt[];
   contentUseModes: string[];
+  customContentUseMode: string; 
   contentUseContext: string;
   humanReview: HumanReview;
 }
@@ -43,12 +42,18 @@ export interface ChecklistItem {
   id: string;
   q: string;
   suggests: UsageTypeKey;
-  priority: number; // Higher number means higher precedence/impact
+  priority: number;
 }
 
 export interface UsageOption {
   value: UsageTypeKey;
   label: string;
   hint: string;
-  examples: string[]; // Added specific examples
+  examples: string[];
+}
+
+export interface ReviewLevelOption {
+  level: HumanReviewLevel;
+  label: string;
+  description: string;
 }

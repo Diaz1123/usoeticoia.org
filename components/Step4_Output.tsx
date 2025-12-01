@@ -1,30 +1,33 @@
-import React, { useState } from 'react';
-import { Copy, Check, FileText, Code, Info, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Copy, Check, FileText, Code, Info, Download, ShieldCheck, RefreshCcw } from 'lucide-react';
 import { DeclarationState } from '../types';
-import { generateDeclarationText, generateJSON, downloadAsFile } from '../utils';
+import { generateDeclarationText, generateJSON, downloadAsFile, computeHash } from '../utils';
 
 interface Props {
   data: DeclarationState;
+  onReset: () => void;
 }
 
-export const Step4_Output: React.FC<Props> = ({ data }) => {
+export const Step4_Output: React.FC<Props> = ({ data, onReset }) => {
   const [activeTab, setActiveTab] = useState<'text' | 'json'>('text');
   const [copied, setCopied] = useState(false);
+  const [hash, setHash] = useState<string | null>(null);
 
-  const content = activeTab === 'text' ? generateDeclarationText(data) : generateJSON(data);
+  useEffect(() => {
+    // Generate the raw text content without the hash line to compute the hash
+    const rawContent = generateDeclarationText(data); 
+    computeHash(rawContent).then(h => setHash(h));
+  }, [data]);
+
+  // The content displayed includes the hash once calculated
+  const content = activeTab === 'text' 
+    ? generateDeclarationText(data, hash || '...') 
+    : generateJSON(data, hash || '...');
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleDownload = () => {
-    if (activeTab === 'text') {
-      downloadAsFile(generateDeclarationText(data), 'declaracion-ia.txt', 'text/plain');
-    } else {
-      downloadAsFile(generateJSON(data), 'declaracion-ia.json', 'application/json');
-    }
   };
 
   return (
@@ -35,9 +38,26 @@ export const Step4_Output: React.FC<Props> = ({ data }) => {
         </div>
         <h2 className="text-2xl font-bold text-slate-900">¡Declaración Lista!</h2>
         <p className="text-slate-500 mt-2 max-w-lg mx-auto">
-            Copia el formato que necesites o descárgalo para adjuntarlo a tu documentación.
+            A continuación se presenta el documento final con trazabilidad completa y código de validación.
         </p>
       </div>
+
+      {/* Validation Certificate Card */}
+      {hash && (
+        <div className="bg-slate-800 rounded-xl p-4 text-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md border border-slate-700">
+            <div className="flex items-center gap-3">
+                <ShieldCheck className="text-emerald-400 w-10 h-10" />
+                <div>
+                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Protocolo de Validación</h4>
+                    <p className="text-sm text-slate-300">Huella Digital (Hash SHA-256)</p>
+                </div>
+            </div>
+            <div className="text-right font-mono">
+                <div className="text-xs text-slate-500 mb-1">ID: {data.declarationId}</div>
+                <div className="text-lg font-bold tracking-widest text-white">{hash}</div>
+            </div>
+        </div>
+      )}
 
       <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         {/* Tabs */}
@@ -94,20 +114,30 @@ export const Step4_Output: React.FC<Props> = ({ data }) => {
       </div>
 
       {/* Download Actions */}
-      <div className="max-w-3xl mx-auto flex flex-wrap gap-3 justify-center">
+      <div className="flex flex-col gap-6 items-center">
+        <div className="flex flex-wrap gap-3 justify-center w-full">
+            <button 
+                onClick={() => downloadAsFile(generateDeclarationText(data, hash || ''), 'declaracion-ia-v3.txt', 'text/plain')}
+                className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors text-sm font-medium"
+            >
+                <Download size={18} />
+                Descargar .txt
+            </button>
+            <button 
+                onClick={() => downloadAsFile(generateJSON(data, hash || ''), 'declaracion-ia-v3.json', 'application/json')}
+                className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors text-sm font-medium"
+            >
+                <Code size={18} />
+                Descargar .json
+            </button>
+        </div>
+
         <button 
-            onClick={() => downloadAsFile(generateDeclarationText(data), 'declaracion-ia.txt', 'text/plain')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors text-sm font-medium"
+            onClick={onReset}
+            className="text-slate-400 hover:text-slate-600 text-sm flex items-center gap-2 transition-colors px-4 py-2 hover:bg-slate-50 rounded-full"
         >
-            <Download size={18} />
-            Descargar como .txt
-        </button>
-        <button 
-            onClick={() => downloadAsFile(generateJSON(data), 'declaracion-ia.json', 'application/json')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors text-sm font-medium"
-        >
-            <Code size={18} />
-            Descargar como .json
+            <RefreshCcw size={14} />
+            Crear nueva declaración (Limpiar todo)
         </button>
       </div>
       
@@ -117,7 +147,7 @@ export const Step4_Output: React.FC<Props> = ({ data }) => {
         <div>
             <strong>Sugerencia de Integración:</strong>
             <p className="mt-1 opacity-90">
-                Utiliza el formato <code>JSON</code> para sistemas automatizados o metadatos ocultos. El formato <code>Texto</code> es ideal para notas al pie, anexos metodológicos o descripciones de posts.
+                El <strong>Hash de Validación</strong> garantiza que esta declaración no ha sido alterada. Inclúyelo siempre en los anexos de tu trabajo.
             </p>
         </div>
       </div>

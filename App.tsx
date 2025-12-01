@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, RefreshCcw } from 'lucide-react';
+import { ChevronRight, ChevronLeft, FilePlus } from 'lucide-react';
 import { DeclarationState } from './types';
 import { getInitialDeclaration } from './constants';
 import { Step1_Identification } from './components/Step1_Identification';
@@ -7,47 +7,59 @@ import { Step2_UsageType } from './components/Step2_UsageType';
 import { Step3_Details } from './components/Step3_Details';
 import { Step4_Output } from './components/Step4_Output';
 
-const STEPS_LABELS = ['Identificación', 'Clasificación', 'Detalles', 'Resultado'];
+const STEPS_LABELS = ['Diagnóstico', 'Clasificación', 'Detalles', 'Resultado'];
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<DeclarationState>(getInitialDeclaration());
   const [isClient, setIsClient] = useState(false);
-  // formKey is used to force a full re-render of the step components when resetting
+  // formKey ensures React completely destroys and recreates components on reset
   const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Validation Logic
   const canProceed = () => {
     switch (currentStep) {
-      case 0: // Step 1: Just need a usage type selected
+      case 0:
         return data.usageTypes.length > 0;
-      case 1: // Step 2: Need at least one type, and if 'other' is selected, custom text needed
+      case 1:
         if (data.usageTypes.length === 0) return false;
         if (data.usageTypes.includes('other') && data.customUsageType.length < 3) return false;
         return true;
-      case 2: // Step 3
+      case 2:
         return data.aiTool.name.length > 1 && data.specificPurpose.length > 5;
       default:
         return true;
     }
   };
 
-  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 3));
-  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 0));
+  const nextStep = () => {
+      setCurrentStep(prev => Math.min(prev + 1, 3));
+      window.scrollTo(0, 0);
+  };
+
+  const prevStep = () => {
+      setCurrentStep(prev => Math.max(prev - 1, 0));
+      window.scrollTo(0, 0);
+  };
   
-  const resetForm = () => {
-      if (window.confirm('¿Estás seguro de que quieres empezar de nuevo? Se perderán los datos actuales.')) {
-          // 1. Reset Data
-          setData(getInitialDeclaration());
-          // 2. Go to start
-          setCurrentStep(0);
-          // 3. Force UI rebuild
-          setFormKey(prev => prev + 1); 
+  const handleNewDeclaration = () => {
+      // If we are in the middle of editing (steps 0-2), confirm action.
+      // If we are at the end (step 3), just proceed.
+      if (currentStep < 3 && !window.confirm('¿Deseas borrar todo y comenzar una nueva declaración?')) {
+          return;
       }
+
+      // 1. Reset Data
+      setData(getInitialDeclaration());
+      // 2. Go to first step
+      setCurrentStep(0);
+      // 3. Increment key to force full re-mount of children
+      setFormKey(prev => prev + 1);
+      // 4. Scroll to top
+      window.scrollTo(0, 0);
   };
 
   if (!isClient) return null;
@@ -67,15 +79,15 @@ export default function App() {
             
             <div className="flex items-center gap-3">
                 <button 
-                    onClick={resetForm}
-                    className="flex items-center gap-2 px-3 py-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
-                    title="Empezar de nuevo"
+                    onClick={handleNewDeclaration}
+                    className="flex items-center gap-2 px-3 py-1.5 text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors text-sm font-medium"
+                    title="Borrar y empezar de nuevo"
                 >
-                    <RefreshCcw size={16} />
-                    <span className="hidden sm:inline">Reiniciar</span>
+                    <FilePlus size={16} />
+                    <span className="hidden sm:inline">Nueva declaración</span>
                 </button>
                 <div className="text-xs font-medium text-slate-400 border border-slate-100 bg-slate-50 px-3 py-1 rounded-full hidden sm:block">
-                    Beta v1.1
+                    Academic v3.0
                 </div>
             </div>
         </div>
@@ -121,7 +133,7 @@ export default function App() {
             {currentStep === 0 && <Step1_Identification data={data} onChange={setData} />}
             {currentStep === 1 && <Step2_UsageType data={data} onChange={setData} />}
             {currentStep === 2 && <Step3_Details data={data} onChange={setData} />}
-            {currentStep === 3 && <Step4_Output data={data} />}
+            {currentStep === 3 && <Step4_Output data={data} onReset={handleNewDeclaration} />}
         </div>
 
       </main>

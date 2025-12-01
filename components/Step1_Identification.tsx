@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { CheckCircle2, Sparkles } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { CheckCircle2 } from 'lucide-react';
 import { DeclarationState, ChecklistItem } from '../types';
-import { HELP_CHECKLIST, USAGE_TYPES } from '../constants';
+import { HELP_CHECKLIST } from '../constants';
 
 interface Props {
   data: DeclarationState;
@@ -9,16 +10,10 @@ interface Props {
 }
 
 export const Step1_Identification: React.FC<Props> = ({ data, onChange }) => {
-  // Lazily initialize state based on existing selection if revisiting
   const [activeChecks, setActiveChecks] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
-    if (data.usageTypes.length > 0) {
-        // Pre-check items that match any selected usage type
-        HELP_CHECKLIST.forEach(item => {
-            if (data.usageTypes.includes(item.suggests)) {
-                initial[item.id] = true;
-            }
-        });
+    if (data.selectedChecklistIds.length > 0) {
+        data.selectedChecklistIds.forEach(id => initial[id] = true);
     }
     return initial;
   });
@@ -27,33 +22,32 @@ export const Step1_Identification: React.FC<Props> = ({ data, onChange }) => {
     const newChecks = { ...activeChecks, [item.id]: !activeChecks[item.id] };
     setActiveChecks(newChecks);
     
-    // Logic: Find all checked items
-    const checkedItems = HELP_CHECKLIST.filter(i => newChecks[i.id]);
+    // Get all selected IDs
+    const checkedIds = Object.keys(newChecks).filter(id => newChecks[id]);
+    const checkedItems = HELP_CHECKLIST.filter(i => checkedIds.includes(i.id));
     
     if (checkedItems.length === 0) {
-      onChange({ ...data, usageTypes: [] });
+      onChange({ ...data, selectedChecklistIds: [], usageTypes: [] });
       return;
     }
 
-    // Logic: Sort by priority (descending) to find the "Dominant" usage
+    // Sort by priority to determine the MAIN usage type for Step 2
     const sortedItems = [...checkedItems].sort((a, b) => b.priority - a.priority);
     const dominantItem = sortedItems[0];
-
-    // Reset usageTypes to just the dominant one initially for better guidance
-    // (User can add more in Step 2)
-    onChange({ ...data, usageTypes: [dominantItem.suggests] });
+    
+    onChange({ 
+        ...data, 
+        selectedChecklistIds: checkedIds,
+        usageTypes: [dominantItem.suggests] // We seed Step 2 with the most significant one
+    });
   };
-
-  const primaryType = data.usageTypes[0];
-  const currentUsageLabel = primaryType ? USAGE_TYPES.find(u => u.value === primaryType)?.label : null;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center md:text-left">
-        <h2 className="text-2xl font-bold text-slate-900">Diagnóstico de Uso</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Diagnóstico de Uso Académico</h2>
         <p className="text-slate-500 mt-2">
-          Selecciona todas las situaciones que apliquen a tu caso. 
-          El sistema sugerirá la categoría principal, pero podrás seleccionar múltiples en el siguiente paso.
+          Selecciona todas las acciones que realizaste con la IA durante tu investigación o redacción.
         </p>
       </div>
 
@@ -90,31 +84,6 @@ export const Step1_Identification: React.FC<Props> = ({ data, onChange }) => {
           );
         })}
       </div>
-
-      {/* Dynamic Feedback Area */}
-      {currentUsageLabel && (
-        <div className="mt-6 p-5 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl text-white shadow-lg animate-in zoom-in-95 duration-300">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-white/10 rounded-lg">
-                <Sparkles className="w-5 h-5 text-yellow-300" />
-            </div>
-            <div className="flex-1">
-                <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                    Uso Principal Detectado
-                </span>
-                <div className="flex items-center gap-2 mt-1">
-                    <h3 className="text-xl font-bold text-white">
-                        {currentUsageLabel}
-                    </h3>
-                </div>
-                <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-                   Basado en tus respuestas, este es el nivel de intervención más significativo. 
-                   Haz clic en "Siguiente" para confirmar o añadir otros tipos de uso.
-                </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
