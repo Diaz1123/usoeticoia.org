@@ -12,6 +12,7 @@ export type HumanReviewLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export interface HumanReview {
   level: HumanReviewLevel;
   reviewerRole: string;
+  reviewerName: string; // Added for academic validation
 }
 
 export interface AITool {
@@ -36,6 +37,7 @@ export interface DeclarationState {
   customContentUseMode: string; 
   contentUseContext: string;
   humanReview: HumanReview;
+  license: string; // New: Creative Commons License
 }
 
 export interface ChecklistItem {
@@ -56,4 +58,16 @@ export interface ReviewLevelOption {
   level: HumanReviewLevel;
   label: string;
   description: string;
+}
+
+export interface Preset {
+  id: string;
+  name: string;
+  description: string;
+  data: Partial<DeclarationState>;
+}
+
+export interface GlossaryTerm {
+  term: string;
+  definition: string;
 }

@@ -1,6 +1,6 @@
 
 import { DeclarationState } from './types';
-import { USAGE_TYPES, HUMAN_REVIEW_LEVELS, HELP_CHECKLIST } from './constants';
+import { USAGE_TYPES, HUMAN_REVIEW_LEVELS, HELP_CHECKLIST, CC_LICENSES } from './constants';
 
 // --- HASHING UTILITY ---
 export const computeHash = async (message: string): Promise<string> => {
@@ -8,7 +8,7 @@ export const computeHash = async (message: string): Promise<string> => {
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex.substring(0, 16).toUpperCase(); // Shortened SHA for readability (first 16 chars)
+  return hashHex.substring(0, 16).toUpperCase(); 
 };
 
 export const generateDeclarationText = (d: DeclarationState, hash?: string): string => {
@@ -18,6 +18,7 @@ export const generateDeclarationText = (d: DeclarationState, hash?: string): str
   }).join('; ');
 
   const reviewLevel = HUMAN_REVIEW_LEVELS.find(r => r.level === d.humanReview.level);
+  const licenseLabel = CC_LICENSES.find(l => l.value === d.license)?.label || d.license;
   
   const contentModes = d.contentUseModes.map(m => {
       if (m === 'Otro') return d.customContentUseMode || 'Otro';
@@ -68,11 +69,17 @@ export const generateDeclarationText = (d: DeclarationState, hash?: string): str
     text += `\n`;
   }
   
-  text += `6. NIVEL DE REVISIÓN HUMANA\n`;
+  text += `6. NIVEL DE REVISIÓN HUMANA Y ÉTICA\n`;
   text += `   • Nivel ${d.humanReview.level}: ${reviewLevel?.label.split(':')[1]?.trim() || 'Desconocido'}\n`;
   text += `   • Descripción: ${reviewLevel?.description}\n`;
-  if (d.humanReview.level > 0 && d.humanReview.reviewerRole) {
-      text += `   • Responsable: ${d.humanReview.reviewerRole}\n`;
+  if (d.humanReview.level > 0) {
+      if (d.humanReview.reviewerName) text += `   • Revisado por: ${d.humanReview.reviewerName}\n`;
+      if (d.humanReview.reviewerRole) text += `   • Rol/Cargo: ${d.humanReview.reviewerRole}\n`;
+  }
+
+  if (d.license && d.license !== 'None') {
+      text += `\n7. LICENCIA DEL PRODUCTO FINAL\n`;
+      text += `   • ${licenseLabel}\n`;
   }
 
   if (hash) {
@@ -99,10 +106,11 @@ export const generateJSON = (d: DeclarationState, hash?: string): string => {
 
   const payload = {
     declarationType: 'academic-ai-transparency',
-    version: '3.0.0',
+    version: '4.0.0',
     generatedAt: new Date().toISOString(),
     id: d.declarationId,
     validationHash: hash || 'pending',
+    license: d.license !== 'None' ? d.license : null,
     traceability: {
         diagnosticIds: d.selectedChecklistIds
     },
@@ -127,6 +135,7 @@ export const generateJSON = (d: DeclarationState, hash?: string): string => {
         level: d.humanReview.level,
         label: reviewLevel?.label,
         description: reviewLevel?.description,
+        reviewerName: d.humanReview.reviewerName || null,
         reviewerRole: d.humanReview.reviewerRole || null 
     }
   };
